@@ -8,6 +8,8 @@ const nextConfig = {
     // ビルド時のESLintエラーを無視
     ignoreDuringBuilds: true,
   },
+  // ビルド時の静的生成タイムアウトを延長
+  staticPageGenerationTimeout: 300,
 };
 
 export default nextConfig;
