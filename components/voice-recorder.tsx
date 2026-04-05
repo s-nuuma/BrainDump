@@ -56,8 +56,7 @@ export function VoiceRecorder({ onSuccess, onError }: VoiceRecorderProps) {
       formData.append("file", blob, "recording.webm");
       formData.append("user_id", "test-user"); // TODO: 認証実装後に動的に取得
 
-      const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-      const targetUrl = baseUrl.startsWith("http") ? `${baseUrl}/transcribe` : `${baseUrl}/transcribe`;
+      const targetUrl = `${window.location.origin}/api/transcribe`;
       
       const response = await fetch(targetUrl, {
         method: "POST",

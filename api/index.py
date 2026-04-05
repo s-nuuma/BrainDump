@@ -33,7 +33,11 @@ if firebase_creds_json:
             print(f"Initializing Firebase Admin with file: {firebase_creds_json}...")
             cred = credentials.Certificate(firebase_creds_json)
             
-        if not firebase_admin._apps:
+        try:
+            firebase_admin.get_app()
+            print("Firebase Admin already initialized.")
+        except ValueError:
+            print("Initializing Firebase Admin...")
             firebase_admin.initialize_app(cred)
         db = firestore.client()
     except Exception as e:
@@ -49,7 +53,7 @@ if not GEMINI_API_KEY:
     print("Warning: GEMINI_API_KEY is not set.")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-app = FastAPI(title="BrainDump AI Engine", root_path="/api")
+app = FastAPI(title="BrainDump AI Engine")
 
 app.add_middleware(
     CORSMiddleware,
@@ -92,14 +96,17 @@ CHAT_MODEL_NAME = "gemini-2.5-pro"
 EMBEDDING_MODEL_NAME = "gemini-embedding-001" 
 
 @app.get("/")
+@app.get("/api")
 async def root():
     return {"message": "BrainDump AI Engine is running"}
 
 @app.get("/health")
+@app.get("/api/health")
 async def health():
     return {"status": "ok"}
 
 @app.post("/transcribe")
+@app.post("/api/transcribe")
 async def transcribe_audio(
     file: UploadFile = File(...)
 ):
@@ -178,6 +185,7 @@ async def transcribe_audio(
 
 
 @app.get("/entries")
+@app.get("/api/entries")
 async def get_entries(
     user_id: str,
     limit: int = Query(50, description="最大取得件数"),
@@ -217,6 +225,7 @@ async def get_entries(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/entries/{entry_id}")
+@app.delete("/api/entries/{entry_id}")
 async def delete_entry(entry_id: str, user_id: str):
     if db is None:
         raise HTTPException(status_code=500, detail="Firestore is not initialized")
@@ -240,6 +249,7 @@ async def delete_entry(entry_id: str, user_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/export")
+@app.get("/api/export")
 async def export_entries(user_id: str):
     if db is None:
         raise HTTPException(status_code=500, detail="Firestore is not initialized")
@@ -265,6 +275,7 @@ async def export_entries(user_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/dump")
+@app.post("/api/dump")
 async def process_dump(request: DumpRequest):
     try:
         # 1. 思考データの構造化 (Gemini Flash)
@@ -344,6 +355,7 @@ async def process_dump(request: DumpRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/insights")
+@app.get("/api/insights")
 async def get_insights(
     user_id: str,
     days: int = Query(30, description="集計対象の日数")
@@ -413,6 +425,7 @@ async def get_insights(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/chat/generate-answer")
+@app.post("/api/chat/generate-answer")
 async def generate_answer(request: ChatRequest):
     if db is None:
         raise HTTPException(status_code=500, detail="Firestore is not initialized")

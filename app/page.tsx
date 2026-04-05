@@ -48,19 +48,21 @@ export default function Home() {
     const checkBackend = async () => {
       try {
         // Vercel統合環境では、フロントエンドから見てバックエンドは常に /api/xxxx
-        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-        const targetUrl = baseUrl.endsWith("/") ? `${baseUrl}health` : `${baseUrl}/health`;
+        // 常に絶対URLで構築することで曖昧さを排除
+        const origin = window.location.origin;
+        const targetUrl = `${origin}/api/health`;
         
         console.log("Checking health at:", targetUrl);
         const res = await fetch(targetUrl);
         if (!res.ok) {
           setStatus(`Offline (${res.status})`);
+          console.error("Health check failed with status:", res.status);
           return;
         }
         const data = await res.json();
         setStatus(data.status === "ok" ? "Connected" : "Error");
       } catch (e: any) {
-        console.error("Health check failed:", e);
+        console.error("Health check exception:", e);
         setStatus(`Offline (Connect Error)`);
       }
     };
@@ -97,8 +99,7 @@ export default function Home() {
     setIsDumping(true);
     setErrorMsg(null);
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-      const targetUrl = baseUrl.endsWith("/") ? `${baseUrl}dump` : `${baseUrl}/dump`;
+      const targetUrl = `${window.location.origin}/api/dump`;
       
       const res = await fetch(targetUrl, {
         method: "POST",

@@ -42,8 +42,7 @@ export function ChatInterface({ userId }: { userId: string }) {
     setIsLoading(true);
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-      const targetUrl = baseUrl.startsWith("http") ? `${baseUrl}/chat/generate-answer` : `${baseUrl}/chat/generate-answer`;
+      const targetUrl = `${window.location.origin}/api/chat/generate-answer`;
       
       const response = await fetch(targetUrl, {
         method: "POST",
@@ -54,7 +53,7 @@ export function ChatInterface({ userId }: { userId: string }) {
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to fetch answer");
+      if (!response.ok) throw new Error(`Failed to fetch answer (${response.status})`);
       
       const data = await response.json();
       
