@@ -2,4 +2,5 @@ fastapi
 python-multipart
 google-genai
 pydantic
+python-dotenv
 firebase-admin
