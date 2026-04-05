@@ -47,10 +47,11 @@ export default function Home() {
     // Backend (FastAPI) のヘルスチェック
     const checkBackend = async () => {
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-        // 絶対パス指定の場合 (localhost等) と相対パス指定 (Vercel) の両方を考慮
-        const healthPath = backendUrl.startsWith("http") ? `${backendUrl}/api/health` : `${backendUrl}/health`;
-        const res = await fetch(healthPath);
+        // Vercel統合環境では、フロントエンドから見てバックエンドは常に /api/xxxx
+        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
+        const targetUrl = baseUrl.startsWith("http") ? `${baseUrl}/health` : `${baseUrl}/health`;
+        
+        const res = await fetch(targetUrl);
         const data = await res.json();
         setStatus(data.status === "ok" ? "Connected" : "Error");
       } catch (e) {
@@ -90,10 +91,10 @@ export default function Home() {
     setIsDumping(true);
     setErrorMsg(null);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-      const dumpPath = backendUrl.startsWith("http") ? `${backendUrl}/api/dump` : `${backendUrl}/dump`;
+      const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
+      const targetUrl = baseUrl.startsWith("http") ? `${baseUrl}/dump` : `${baseUrl}/dump`;
       
-      const res = await fetch(dumpPath, {
+      const res = await fetch(targetUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

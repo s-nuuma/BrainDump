@@ -91,15 +91,15 @@ CHAT_MODEL_NAME = "gemini-2.5-pro"
 # 新 SDK で対応している最新の Embedding モデルを指定
 EMBEDDING_MODEL_NAME = "gemini-embedding-001" 
 
-@app.get("/api")
+@app.get("/")
 async def root():
     return {"message": "BrainDump AI Engine is running"}
 
-@app.get("/api/health")
+@app.get("/health")
 async def health():
     return {"status": "ok"}
 
-@app.post("/api/transcribe")
+@app.post("/transcribe")
 async def transcribe_audio(
     file: UploadFile = File(...)
 ):
@@ -177,7 +177,7 @@ async def transcribe_audio(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/entries")
+@app.get("/entries")
 async def get_entries(
     user_id: str,
     limit: int = Query(50, description="最大取得件数"),
@@ -216,7 +216,7 @@ async def get_entries(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/api/entries/{entry_id}")
+@app.delete("/entries/{entry_id}")
 async def delete_entry(entry_id: str, user_id: str):
     if db is None:
         raise HTTPException(status_code=500, detail="Firestore is not initialized")
@@ -239,7 +239,7 @@ async def delete_entry(entry_id: str, user_id: str):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/export")
+@app.get("/export")
 async def export_entries(user_id: str):
     if db is None:
         raise HTTPException(status_code=500, detail="Firestore is not initialized")
@@ -264,7 +264,7 @@ async def export_entries(user_id: str):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/dump")
+@app.post("/dump")
 async def process_dump(request: DumpRequest):
     try:
         # 1. 思考データの構造化 (Gemini Flash)
@@ -343,7 +343,7 @@ async def process_dump(request: DumpRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/insights")
+@app.get("/insights")
 async def get_insights(
     user_id: str,
     days: int = Query(30, description="集計対象の日数")
@@ -412,7 +412,7 @@ async def get_insights(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/chat/generate-answer")
+@app.post("/chat/generate-answer")
 async def generate_answer(request: ChatRequest):
     if db is None:
         raise HTTPException(status_code=500, detail="Firestore is not initialized")
