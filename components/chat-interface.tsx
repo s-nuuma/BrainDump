@@ -42,8 +42,10 @@ export function ChatInterface({ userId }: { userId: string }) {
     setIsLoading(true);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-      const response = await fetch(`${backendUrl}/chat/generate-answer`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
+      const chatPath = backendUrl.startsWith("http") ? `${backendUrl}/api/chat/generate-answer` : `${backendUrl}/chat/generate-answer`;
+      
+      const response = await fetch(chatPath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

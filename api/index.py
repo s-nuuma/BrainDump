@@ -91,11 +91,11 @@ CHAT_MODEL_NAME = "gemini-2.5-pro"
 # 新 SDK で対応している最新の Embedding モデルを指定
 EMBEDDING_MODEL_NAME = "gemini-embedding-001" 
 
-@app.get("/")
+@app.get("/api")
 async def root():
     return {"message": "BrainDump AI Engine is running"}
 
-@app.get("/health")
+@app.get("/api/health")
 async def health():
     return {"status": "ok"}
 
@@ -412,7 +412,7 @@ async def get_insights(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/chat/generate-answer")
+@app.post("/api/chat/generate-answer")
 async def generate_answer(request: ChatRequest):
     if db is None:
         raise HTTPException(status_code=500, detail="Firestore is not initialized")

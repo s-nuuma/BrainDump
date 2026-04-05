@@ -47,8 +47,10 @@ export default function Home() {
     // Backend (FastAPI) のヘルスチェック
     const checkBackend = async () => {
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-        const res = await fetch(`${backendUrl}/health`);
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
+        // 絶対パス指定の場合 (localhost等) と相対パス指定 (Vercel) の両方を考慮
+        const healthPath = backendUrl.startsWith("http") ? `${backendUrl}/api/health` : `${backendUrl}/health`;
+        const res = await fetch(healthPath);
         const data = await res.json();
         setStatus(data.status === "ok" ? "Connected" : "Error");
       } catch (e) {
@@ -60,11 +62,10 @@ export default function Home() {
 
   const handleLogin = async () => {
     try {
-      console.log("Login started with apiKey:", process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? "Defined" : "UNDEFINED");
       await signInWithPopup(auth, googleProvider);
     } catch (e: any) {
       console.error("Login failed:", e);
-      alert("ログインに失敗しました。\n理由: " + (e.code || e.message) + "\n\nVercelのドメインがFirebaseコンソールの'Authorized domains'に登録されているか確認してください。");
+      alert("ログインに失敗しました。\n理由: " + (e.code || e.message));
     }
   };
 
@@ -89,8 +90,10 @@ export default function Home() {
     setIsDumping(true);
     setErrorMsg(null);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-      const res = await fetch(`${backendUrl}/api/dump`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
+      const dumpPath = backendUrl.startsWith("http") ? `${backendUrl}/api/dump` : `${backendUrl}/dump`;
+      
+      const res = await fetch(dumpPath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -151,8 +154,7 @@ export default function Home() {
       {!isFocusMode && (
         <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex mb-12">
           <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-800 bg-zinc-900/30 pb-6 pt-8 backdrop-blur-2xl lg:static lg:w-auto lg:rounded-xl lg:border lg:bg-zinc-800/30 lg:p-4">
-            BrainDump&nbsp;
-            <code className="font-bold">v0.1.0-mvp</code>
+            BrainDump
           </p>
           <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-black via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
             <div className="flex items-center gap-4 p-8 lg:p-0">
@@ -180,7 +182,7 @@ export default function Home() {
                   : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              Dump (Input)
+              input
             </button>
             <button
               onClick={() => setActiveTab("archive")}
@@ -190,7 +192,7 @@ export default function Home() {
                   : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              Archive (History)
+              history
             </button>
             <button
               onClick={() => setActiveTab("insights")}
@@ -200,7 +202,7 @@ export default function Home() {
                   : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              Insights
+              insights
             </button>
           </div>
           
@@ -239,10 +241,6 @@ export default function Home() {
                   <h1 className="text-5xl md:text-7xl font-light tracking-tighter text-zinc-100">
                     Dump your <span className="text-zinc-500 italic">chaos</span>.
                   </h1>
-                  <p className="max-w-[600px] text-zinc-400 text-lg md:text-xl font-light leading-relaxed">
-                    就寝前の雑音を外部へ。脳のメモリを解放し、<br className="hidden md:inline" />
-                    明日のあなたへ繋ぐ「第2の脳」。
-                  </p>
                 </>
               )}
               
@@ -306,29 +304,7 @@ export default function Home() {
         <InsightsView userId={user.uid} />
       )}
 
-      {/* Footer Cards - Hidden in Focus Mode */}
-      {!isFocusMode && (
-        <div className="mt-32 mb-16 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-3 lg:text-left">
-          <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-800 hover:bg-zinc-800/30">
-            <h2 className="mb-3 text-2xl font-semibold">Voice Dump</h2>
-            <p className="m-0 max-w-[30ch] text-sm text-zinc-400">
-              声を出すだけで、AIがトピックを整理。
-            </p>
-          </div>
-          <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-800 hover:bg-zinc-800/30">
-            <h2 className="mb-3 text-2xl font-semibold">Reflection</h2>
-            <p className="m-0 max-w-[30ch] text-sm text-zinc-400">
-              過去の自分に問いかけ、答えを得る。
-            </p>
-          </div>
-          <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-800 hover:bg-zinc-800/30">
-            <h2 className="mb-3 text-2xl font-semibold">Low Stimulus</h2>
-            <p className="m-0 max-w-[30ch] text-sm text-zinc-400">
-              夜の使用に最適化したミニマルなUX。
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Footer Cards Removed */}
     </main>
   );
 }

@@ -56,8 +56,10 @@ export function VoiceRecorder({ onSuccess, onError }: VoiceRecorderProps) {
       formData.append("file", blob, "recording.webm");
       formData.append("user_id", "test-user"); // TODO: 認証実装後に動的に取得
 
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-      const response = await fetch(`${backendUrl}/api/transcribe`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
+      const transcribePath = backendUrl.startsWith("http") ? `${backendUrl}/api/transcribe` : `${backendUrl}/transcribe`;
+      
+      const response = await fetch(transcribePath, {
         method: "POST",
         body: formData,
       });
@@ -103,12 +105,12 @@ export function VoiceRecorder({ onSuccess, onError }: VoiceRecorderProps) {
         </button>
       </div>
 
-      <p className="text-sm font-medium tracking-wide text-zinc-400">
+      <p className="text-sm font-medium tracking-wide text-zinc-400 h-5">
         {isProcessing
           ? "音声を文字起こし中..."
           : isRecording
           ? "思考をアウトプット中..."
-          : "タップして録音を開始"}
+          : ""}
       </p>
     </div>
   );
