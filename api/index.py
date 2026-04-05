@@ -49,7 +49,7 @@ if not GEMINI_API_KEY:
     print("Warning: GEMINI_API_KEY is not set.")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-app = FastAPI(title="BrainDump AI Engine")
+app = FastAPI(title="BrainDump AI Engine", root_path="/api")
 
 app.add_middleware(
     CORSMiddleware,

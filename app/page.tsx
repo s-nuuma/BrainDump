@@ -49,13 +49,19 @@ export default function Home() {
       try {
         // Vercel統合環境では、フロントエンドから見てバックエンドは常に /api/xxxx
         const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-        const targetUrl = baseUrl.startsWith("http") ? `${baseUrl}/health` : `${baseUrl}/health`;
+        const targetUrl = baseUrl.endsWith("/") ? `${baseUrl}health` : `${baseUrl}/health`;
         
+        console.log("Checking health at:", targetUrl);
         const res = await fetch(targetUrl);
+        if (!res.ok) {
+          setStatus(`Offline (${res.status})`);
+          return;
+        }
         const data = await res.json();
         setStatus(data.status === "ok" ? "Connected" : "Error");
-      } catch (e) {
-        setStatus("Offline (Backend not running)");
+      } catch (e: any) {
+        console.error("Health check failed:", e);
+        setStatus(`Offline (Connect Error)`);
       }
     };
     checkBackend();
@@ -92,7 +98,7 @@ export default function Home() {
     setErrorMsg(null);
     try {
       const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-      const targetUrl = baseUrl.startsWith("http") ? `${baseUrl}/dump` : `${baseUrl}/dump`;
+      const targetUrl = baseUrl.endsWith("/") ? `${baseUrl}dump` : `${baseUrl}/dump`;
       
       const res = await fetch(targetUrl, {
         method: "POST",
@@ -104,7 +110,7 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to dump data");
+        throw new Error(`Failed to dump data (${res.status})`);
       }
 
       const result = await res.json();
@@ -134,7 +140,7 @@ export default function Home() {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-[#0a0a0a] text-[#ededed]">
         <div className="text-center space-y-8">
-          <h1 className="text-5xl md:text-7xl font-light tracking-tighter text-zinc-100">
+          <h1 className="text-5xl md:text-7xl font-light tracking-tighter text-zinc-100 italic">
             BrainDump
           </h1>
           <p className="text-zinc-400 text-lg">外部メモリへアクセスするにはログインしてください</p>
@@ -175,36 +181,19 @@ export default function Home() {
       {!isFocusMode && (
         <div className="flex flex-wrap justify-center items-center gap-4 mb-12 w-full max-w-5xl">
           <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab("dump")}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                activeTab === "dump" 
-                  ? "bg-zinc-100 text-black" 
-                  : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              input
-            </button>
-            <button
-              onClick={() => setActiveTab("archive")}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                activeTab === "archive" 
-                  ? "bg-zinc-100 text-black" 
-                  : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              history
-            </button>
-            <button
-              onClick={() => setActiveTab("insights")}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                activeTab === "insights" 
-                  ? "bg-zinc-100 text-black" 
-                  : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              insights
-            </button>
+            {["input", "history", "insights"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                  activeTab === tab 
+                    ? "bg-zinc-100 text-black" 
+                    : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
           
           <div className="flex-1"></div>
@@ -214,7 +203,7 @@ export default function Home() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-full text-sm font-medium transition-colors"
           >
             <EyeOff className="w-4 h-4" />
-            Focus Mode
+            Focus
           </button>
         </div>
       )}
@@ -227,7 +216,7 @@ export default function Home() {
             className="flex items-center gap-2 px-4 py-2 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 rounded-full text-sm transition-colors shadow-lg"
           >
             <Eye className="w-4 h-4" />
-            Exit Focus
+            Exit
           </button>
         </div>
       )}
@@ -238,11 +227,9 @@ export default function Home() {
           <div className={`relative flex place-items-center w-full justify-center ${isFocusMode ? 'mt-24' : ''}`}>
             <div className="flex flex-col items-center text-center space-y-8 w-full">
               {!isFocusMode && (
-                <>
-                  <h1 className="text-5xl md:text-7xl font-light tracking-tighter text-zinc-100">
-                    Dump your <span className="text-zinc-500 italic">chaos</span>.
-                  </h1>
-                </>
+                <h1 className="text-5xl md:text-7xl font-light tracking-tighter text-zinc-100">
+                  Dump your <span className="text-zinc-500 italic">chaos</span>.
+                </h1>
               )}
               
               <div className={`w-full max-w-[600px] ${!isFocusMode ? 'pt-12' : ''}`}>
@@ -253,7 +240,7 @@ export default function Home() {
                     value={draftText}
                     onChange={(e) => setDraftText(e.target.value)}
                     placeholder="思考をテキストで入力、またはマイクで録音..."
-                    className="w-full h-48 p-5 bg-zinc-900/80 border border-zinc-800 rounded-2xl text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-700 resize-none leading-relaxed"
+                    className="w-full h-48 p-5 bg-zinc-900/80 border border-zinc-800 rounded-2xl text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-700 resize-none leading-relaxed shadow-2xl"
                     disabled={isDumping}
                   />
                   <div className="absolute bottom-4 right-4">
@@ -263,7 +250,7 @@ export default function Home() {
                       className={`px-6 py-2 rounded-lg font-medium transition-colors ${
                         !draftText.trim() || isDumping
                           ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                          : "bg-white text-black hover:bg-zinc-200"
+                          : "bg-white text-black hover:bg-zinc-200 shadow-md"
                       }`}
                     >
                       {isDumping ? "Dumping..." : "Dump"}
@@ -273,18 +260,20 @@ export default function Home() {
               </div>
 
               {!isFocusMode && errorMsg && (
-                <div className="mt-4 text-red-500 text-sm">
+                <div className="mt-4 text-red-500 text-sm bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20 animate-pulse">
                   {errorMsg}
                 </div>
               )}
 
               {!isFocusMode && lastResult && (
-                <div className="mt-8 p-6 bg-zinc-900/50 rounded-xl border border-zinc-800 text-left max-w-[600px] w-full">
-                  <h3 className="text-xl font-semibold mb-4 text-zinc-200">Processing Result</h3>
-                  <p className="text-zinc-400 mb-2"><strong className="text-zinc-300">Topic:</strong> {lastResult.topic?.join(", ")}</p>
-                  <p className="text-zinc-400 mb-2"><strong className="text-zinc-300">Sentiment:</strong> {lastResult.sentiment?.label} ({lastResult.sentiment?.score})</p>
-                  <p className="text-zinc-400 mb-4"><strong className="text-zinc-300">Summary:</strong> {lastResult.summary}</p>
-                  <p className="text-sm text-zinc-500 italic border-t border-zinc-800 pt-4">
+                <div className="mt-8 p-6 bg-zinc-900/50 rounded-xl border border-zinc-800 text-left max-w-[600px] w-full backdrop-blur-sm shadow-xl">
+                  <h3 className="text-xl font-semibold mb-4 text-zinc-200">Result</h3>
+                  <div className="space-y-2 text-sm text-zinc-400">
+                    <p><strong className="text-zinc-300">Topic:</strong> {lastResult.topic?.join(", ")}</p>
+                    <p><strong className="text-zinc-300">Sentiment:</strong> {lastResult.sentiment?.label} ({lastResult.sentiment?.score})</p>
+                    <p><strong className="text-zinc-300">Summary:</strong> {lastResult.summary}</p>
+                  </div>
+                  <p className="text-sm text-zinc-500 italic border-t border-zinc-800 mt-4 pt-4 leading-relaxed">
                     "{lastResult.content}"
                   </p>
                 </div>
@@ -305,7 +294,8 @@ export default function Home() {
         <InsightsView userId={user.uid} />
       )}
 
-      {/* Footer Cards Removed */}
+      {/* Spacing for mobile fixed bottom navbar if any */}
+      <div className="h-32" />
     </main>
   );
 }
