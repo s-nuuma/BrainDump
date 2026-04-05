@@ -60,9 +60,11 @@ export default function Home() {
 
   const handleLogin = async () => {
     try {
+      console.log("Login started with apiKey:", process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? "Defined" : "UNDEFINED");
       await signInWithPopup(auth, googleProvider);
-    } catch (e) {
-      console.error("Login failed", e);
+    } catch (e: any) {
+      console.error("Login failed:", e);
+      alert("ログインに失敗しました。\n理由: " + (e.code || e.message) + "\n\nVercelのドメインがFirebaseコンソールの'Authorized domains'に登録されているか確認してください。");
     }
   };
 
