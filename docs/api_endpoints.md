@@ -12,8 +12,8 @@ FastAPI 側で実装すべき主要なエンドポイントを定義します。
   - `file`: 音声ファイル (multipart/form-data)
   - `user_id`: ユーザーID
 - **Processing**:
-  1. OpenAI Whisper API による文字起こし
-  2. Gemini 1.5 Flash による構造化 (Topic, Sentiment, Actionable, Summary)
+  1. Gemini 3.1 Flash-Lite による音声文字起こし
+  2. Gemini 3.1 Flash による構造化 (Topic, Sentiment, Actionable, Summary)
   3. Gemini Embedding によるベクトル化
 - **Response**:
   - `status`: "success"
@@ -35,7 +35,7 @@ FastAPI 側で実装すべき主要なエンドポイントを定義します。
 
 ### `POST /chat/generate-answer`
 
-ベクトル検索結果（コンテキスト）に基づき、Gemini Pro が回答を生成する。
+ベクトル検索結果（コンテキスト）に基づき、Gemini 3.1 Pro が回答を生成する。
 
 - **Request**:
   - `query`: ユーザーの質問

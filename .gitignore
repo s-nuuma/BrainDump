@@ -31,3 +31,9 @@ Thumbs.db
 # Project specific
 backend/venv/
 frontend/node_modules/
+.history/
+
+# Firebase / Secrets
+service-account.json
+backend/service-account.json
+*.json:Zone.Identifier
