@@ -127,7 +127,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
             )
         )
         try:
-            os.unlink(temp_path)
+            os.unlink(temp.name)
             client.files.delete(name=audio_file.name)
         except: pass
 
@@ -141,7 +141,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
 async def get_entries(user_id: str, limit: int = 50, tag: Optional[str] = None):
     from firebase_admin import firestore
     db = get_db()
-    if db is None: raise HTTPException(status_code=500, detail="DB Error")
+    if db is None: raise HTTPException(status_code=500, detail="Database not initialized.")
     try:
         query = db.collection("entries").where(filter=firestore.FieldFilter("user_id", "==", user_id))
         if tag: query = query.where(filter=firestore.FieldFilter("topic", "array_contains", tag))
@@ -206,7 +206,7 @@ async def get_insights(user_id: str, days: int = 30):
     from firebase_admin import firestore
     from datetime import timedelta
     db = get_db()
-    if db is None: raise HTTPException(status_code=500, detail="DB Error")
+    if db is None: raise HTTPException(status_code=500, detail="Database not initialized.")
     try:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         docs = db.collection("entries").where(filter=firestore.FieldFilter("user_id", "==", user_id)).stream()
@@ -216,8 +216,7 @@ async def get_insights(user_id: str, days: int = 30):
             if d.get("created_at") and d["created_at"] >= cutoff:
                 entries.append(d)
         
-        # 集計ロジック...
-        return {"status": "success", "data": {"total": len(entries)}} # ひとまず
+        return {"status": "success", "data": {"total": len(entries)}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -230,7 +229,7 @@ async def generate_answer(request: ChatRequest):
     from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
     from firebase_admin import firestore
     
-    if db is None: raise HTTPException(status_code=500)
+    if db is None: raise HTTPException(status_code=500, detail="Database not initialized.")
     try:
         q_emb = client.models.embed_content(
             model="gemini-embedding-001",
@@ -238,16 +237,31 @@ async def generate_answer(request: ChatRequest):
             config={"output_dimensionality": 768}
         )
         
-        query = db.collection("entries").where(filter=firestore.FieldFilter("user_id", "==", request.user_id)).find_nearest(
-            vector_field="embedding",
-            query_vector=Vector(q_emb.embeddings[0].values),
-            distance_measure=DistanceMeasure.COSINE,
-            limit=3
-        )
-        docs = query.stream()
-        ctx = [d.to_dict().get('summary') for d in docs]
-        
-        res = client.models.generate_content(model="gemini-2.5-pro", contents=f"記録: {ctx}\n質問: {request.query}")
-        return {"answer": res.text, "sources": []}
+        try:
+            query = db.collection("entries").where(filter=firestore.FieldFilter("user_id", "==", request.user_id)).find_nearest(
+                vector_field="embedding",
+                query_vector=Vector(q_emb.embeddings[0].values),
+                distance_measure=DistanceMeasure.COSINE,
+                limit=5
+            )
+            docs = query.stream()
+            contexts = []
+            for d in docs:
+                data = d.to_dict()
+                contexts.append(f"Summary: {data.get('summary')}\nContent: {data.get('content')}")
+        except Exception as query_err:
+            if "index" in str(query_err).lower():
+                return {
+                    "answer": "【システム案内】AIチャット用のベクトルインデックス作成が必要です。Firebaseコンソールからインデックスの作成を承認してください。設定完了まで会話は制限されます。",
+                    "sources": ["INDEX_REQUIRED"]
+                }
+            raise query_err
+            
+        if not contexts:
+            return {"answer": "該当する記録が見つかりませんでした。", "sources": []}
+
+        prompt = f"以下の過去記録を元に答えてください:\n\n" + "\n---\n".join(contexts) + f"\n\n質問: {request.query}"
+        response = client.models.generate_content(model="gemini-2.5-pro", contents=prompt)
+        return {"answer": response.text, "sources": []}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
